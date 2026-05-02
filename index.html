@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FinSight — Financial Analysis</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --green:       #1D9E75;
+  --green-dark:  #0F6E56;
+  --green-light: #E1F5EE;
+  --green-mid:   #9FE1CB;
+  --amber-bg:    #FAEEDA;
+  --amber-text:  #854F0B;
+  --red-bg:      #FCEBEB;
+  --red-text:    #A32D2D;
+  --bg:          #F8F9FA;
+  --surface:     #FFFFFF;
+  --surface2:    #F1F3F5;
+  --border:      rgba(0,0,0,0.09);
+  --border2:     rgba(0,0,0,0.18);
+  --text1:       #1C1C1E;
+  --text2:       #6B7280;
+  --text3:       #9CA3AF;
+  --radius:      10px;
+  --radius-lg:   14px;
+  --shadow-sm:   0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md:   0 4px 16px rgba(0,0,0,0.10);
+  --shadow-lg:   0 8px 32px rgba(0,0,0,0.14);
+  --font:        'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+body { font-family: var(--font); background: var(--bg); color: var(--text1); min-height: 100vh; font-size: 14px; }
+
+/* ── Topbar ──────────────────────────────────────────────── */
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 28px;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  box-shadow: var(--shadow-sm);
+}
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 15px; }
+.brand-icon {
+  width: 30px; height: 30px; background: var(--green);
+  border-radius: 8px; display: flex; align-items: center; justify-content: center;
+}
+.brand-icon svg { width: 16px; height: 16px; fill: white; }
+.brand-sub { font-size: 11px; font-weight: 400; color: var(--text2); margin-top: 1px; }
+.topbar-right { display: flex; gap: 10px; align-items: center; }
+
+/* ── Buttons ─────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px; border-radius: var(--radius);
+  font-size: 13px; font-weight: 500; cursor: pointer;
+  border: 1px solid var(--border2);
+  background: var(--surface); color: var(--text1);
+  transition: background 0.13s, box-shadow 0.13s;
+  white-space: nowrap; font-family: var(--font);
+}
+.btn:hover { background: var(--surface2); box-shadow: var(--shadow-sm); }
+.btn:active { transform: scale(0.98); }
+.btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+.btn-primary { background: var(--green); color: #fff; border-color: var(--green); }
+.btn-primary:hover { background: var(--green-dark); border-color: var(--green-dark); }
+.btn-danger { background: var(--red-bg); color: var(--red-text); border-color: #F7C1C1; }
+.btn-danger:hover { background: #F7C1C1; }
+.btn-sm { padding: 5px 10px; font-size: 12px; }
+
+/* ── Main layout ─────────────────────────────────────────── */
+.main { max-width: 1200px; margin: 0 auto; padding: 28px 24px; }
+
+/* ── Stat cards ──────────────────────────────────────────── */
+.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px; }
+.stat-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 18px 20px;
+  box-shadow: var(--shadow-sm);
+}
+.stat-label { font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+.stat-value { font-size: 26px; font-weight: 700; line-height: 1; }
+.stat-sub   { font-size: 12px; color: var(--text3); margin-top: 5px; }
+.stat-value.green { color: var(--green); }
+.stat-value.sm    { font-size: 15px; margin-top: 3px; }
+
+/* ── Table card ──────────────────────────────────────────── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;
+}
+.card-header {
+  padding: 16px 22px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.card-title { font-size: 14px; font-weight: 600; }
+.card-meta  { font-size: 12px; color: var(--text2); }
+
+table { width: 100%; border-collapse: collapse; }
+thead th {
+  padding: 11px 16px; text-align: left;
+  background: var(--surface2); font-size: 11px;
+  font-weight: 600; color: var(--text2);
+  text-transform: uppercase; letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+tbody td { padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: #FAFAFA; }
+
+.badge {
+  display: inline-flex; padding: 3px 9px;
+  border-radius: 99px; font-size: 11px; font-weight: 600;
+}
+.badge-amber  { background: var(--amber-bg); color: var(--amber-text); }
+.badge-green  { background: var(--green-light); color: var(--green-dark); }
+.badge-red    { background: var(--red-bg); color: var(--red-text); }
+
+.up   { color: #0F6E56; font-weight: 600; }
+.down { color: #993C1D; font-weight: 600; }
+
+/* ── Empty state ─────────────────────────────────────────── */
+.empty {
+  text-align: center; padding: 72px 24px;
+  color: var(--text3);
+}
+.empty-icon { width: 52px; height: 52px; margin: 0 auto 16px; opacity: 0.35; }
+.empty-title { font-size: 16px; font-weight: 600; color: var(--text2); margin-bottom: 6px; }
+.empty-sub   { font-size: 13px; }
+
+/* ── Modals ──────────────────────────────────────────────── */
+.overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 999; padding: 16px;
+}
+.modal {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+  width: 640px; max-width: 100%;
+  max-height: 90vh; overflow-y: auto;
+  display: flex; flex-direction: column;
+}
+.modal-wide { width: 740px; }
+.modal-head {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+  position: sticky; top: 0; background: var(--surface); z-index: 2;
+}
+.modal-head h2 { font-size: 16px; font-weight: 600; }
+.modal-body { padding: 22px 24px; flex: 1; }
+.modal-foot {
+  padding: 16px 24px; border-top: 1px solid var(--border);
+  display: flex; gap: 10px; justify-content: flex-end;
+  background: var(--surface); position: sticky; bottom: 0; z-index: 2;
+}
+.close-btn {
+  width: 30px; height: 30px; border-radius: var(--radius);
+  background: none; border: 1px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--text2); font-size: 15px;
+  transition: background 0.13s;
+}
+.close-btn:hover { background: var(--surface2); }
+
+/* ── Form fields ─────────────────────────────────────────── */
+.field { margin-bottom: 16px; }
+.field label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; }
+.field input, .field select, .field textarea {
+  width: 100%; padding: 9px 13px;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  background: var(--surface); color: var(--text1);
+  font-size: 14px; font-family: var(--font);
+  transition: border-color 0.13s;
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  outline: none; border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(29,158,117,0.12);
+}
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+/* ── Drop zone ───────────────────────────────────────────── */
+.dropzone {
+  border: 2px dashed var(--border2);
+  border-radius: var(--radius-lg);
+  padding: 40px 24px; text-align: center;
+  cursor: pointer; transition: border-color 0.15s, background 0.15s;
+  background: var(--surface2);
+}
+.dropzone:hover, .dropzone.drag { border-color: var(--green); background: var(--green-light); }
+.dropzone-icon { width: 44px; height: 44px; margin: 0 auto 12px; color: var(--text3); }
+.dropzone-text { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.dropzone-sub  { font-size: 12px; color: var(--text2); }
+
+.preview-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 10px; margin-top: 16px;
+}
+.preview-wrap { position: relative; border-radius: var(--radius); overflow: hidden; }
+.preview-img  { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; }
+.preview-rm {
+  position: absolute; top: 5px; right: 5px;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: rgba(0,0,0,0.65); color: white;
+  font-size: 12px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; border: none; transition: background 0.13s;
+}
+.preview-rm:hover { background: rgba(163,45,45,0.9); }
+
+/* ── Progress ────────────────────────────────────────────── */
+.progress-wrap { margin-top: 16px; }
+.progress-label { font-size: 12px; color: var(--text2); margin-bottom: 6px; }
+.progress-bar  { height: 5px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--green); transition: width 0.4s ease; border-radius: 3px; }
+
+/* ── Error / info boxes ──────────────────────────────────── */
+.err-box {
+  background: var(--red-bg); border: 1px solid #F7C1C1;
+  border-radius: var(--radius); padding: 11px 14px;
+  font-size: 13px; color: var(--red-text); margin-top: 12px;
+}
+.info-box {
+  background: var(--green-light); border: 1px solid var(--green-mid);
+  border-radius: var(--radius); padding: 11px 14px;
+  font-size: 13px; color: var(--green-dark); margin-top: 12px;
+}
+
+/* ── Detail view sections ────────────────────────────────── */
+.detail-section { margin-bottom: 22px; }
+.detail-section-title {
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--text2); margin-bottom: 10px;
+  display: flex; align-items: center; gap: 7px;
+}
+.detail-section-title::after {
+  content: ""; flex: 1; height: 1px; background: var(--border);
+}
+.detail-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.detail-table td {
+  padding: 8px 0; border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.detail-table tr:last-child td { border-bottom: none; }
+.detail-table .lbl { color: var(--text2); width: 48%; }
+.detail-table .val { font-weight: 500; }
+.detail-table .chg { text-align: right; font-size: 12px; }
+
+.narrative-box {
+  background: var(--green-light);
+  border-left: 3px solid var(--green);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 14px 16px; font-size: 13px;
+  line-height: 1.75; color: var(--text1);
+}
+.outlook-box {
+  background: var(--surface2);
+  border-left: 3px solid #B4B2A9;
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 14px 16px; font-size: 13px;
+  line-height: 1.75; color: var(--text1);
+}
+
+/* ── Spinner ─────────────────────────────────────────────── */
+.spinner {
+  width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,0.35);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+.spinner-dark {
+  border-color: rgba(0,0,0,0.15);
+  border-top-color: var(--green);
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Toast ───────────────────────────────────────────────── */
+.toast {
+  position: fixed; bottom: 24px; right: 24px;
+  background: var(--text1); color: white;
+  border-radius: var(--radius-lg);
+  padding: 13px 20px; font-size: 13px; font-weight: 500;
+  box-shadow: var(--shadow-lg); z-index: 9999;
+  display: flex; align-items: center; gap: 10px;
+  animation: slidein 0.25s ease;
+  max-width: 320px;
+}
+.toast.success { background: var(--green-dark); }
+.toast.error   { background: #A32D2D; }
+@keyframes slidein {
+  from { transform: translateY(10px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* ── Config banner ───────────────────────────────────────── */
+.config-banner {
+  background: #FAEEDA; border: 1px solid #FAC775;
+  border-radius: var(--radius); padding: 14px 18px; margin-bottom: 24px;
+  font-size: 13px; color: var(--amber-text); line-height: 1.6;
+}
+.config-banner strong { font-weight: 600; }
+.config-banner a { color: var(--amber-text); text-decoration: underline; }
+.config-banner code {
+  background: rgba(0,0,0,0.08); border-radius: 4px;
+  padding: 1px 5px; font-family: monospace; font-size: 12px;
+}
+
+@media (max-width: 768px) {
+  .stats-row { grid-template-columns: 1fr 1fr; }
+  .field-row { grid-template-columns: 1fr; }
+  .preview-grid { grid-template-columns: 1fr 1fr; }
+  .topbar { padding: 0 16px; }
+  .main { padding: 18px 14px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Top bar ─────────────────────────────────────────── -->
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-icon">
+      <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+    </div>
+    <div>
+      <div>FinSight</div>
+      <div class="brand-sub">Financial Analysis System</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <button class="btn" onclick="openConfig()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      Settings
+    </button>
+    <button class="btn btn-primary" onclick="openUpload()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+      Analyze Screenshots
+    </button>
+  </div>
+</header>
+
+<!-- ── Main ────────────────────────────────────────────── -->
+<main class="main">
+
+  <div id="configBanner" class="config-banner" style="display:none">
+    <strong>Setup required:</strong> Enter your Google Apps Script Web App URL in
+    <strong>Settings</strong> to connect this app to your spreadsheet.
+    <a href="#" onclick="openConfig();return false;">Open Settings →</a>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Reports analyzed</div>
+      <div class="stat-value green" id="statTotal">0</div>
+      <div class="stat-sub">total entries</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Latest company</div>
+      <div class="stat-value sm" id="statLatest">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Avg revenue growth</div>
+      <div class="stat-value sm" id="statGrowth">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Last analyzed</div>
+      <div class="stat-value sm" id="statDate">—</div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">All reports</div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span class="card-meta" id="entryCount">0 entries</span>
+        <button class="btn btn-sm" onclick="loadEntries()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+          Refresh
+        </button>
+      </div>
+    </div>
+    <div id="tableWrap">
+      <div class="empty">
+        <div class="empty-icon">
+          <svg viewBox="0 0 52 52" fill="none"><rect x="8" y="8" width="36" height="36" rx="5" stroke="currentColor" stroke-width="2"/><path d="M17 26h18M17 32h12M17 20h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <div class="empty-title">No reports yet</div>
+        <div class="empty-sub">Upload financial screenshots to get started</div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ══════════════════════════════════════════════════════════
+     UPLOAD / ANALYZE MODAL
+══════════════════════════════════════════════════════════ -->
+<div class="overlay" id="uploadOverlay" style="display:none">
+<div class="modal">
+  <div class="modal-head">
+    <h2>Analyze financial screenshots</h2>
+    <button class="close-btn" onclick="closeUpload()">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="field-row">
+      <div class="field">
+        <label>Company name <span style="color:red">*</span></label>
+        <input type="text" id="companyInput" placeholder="e.g. At-Tahur Limited">
+      </div>
+      <div class="field">
+        <label>Report period <span style="color:red">*</span></label>
+        <input type="text" id="dateInput" placeholder="e.g. 9MFY26, Q3 2025">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Financial screenshots</label>
+      <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+        <div class="dropzone-icon">
+          <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="4" y="10" width="36" height="28" rx="4" stroke="currentColor" stroke-width="2"/>
+            <path d="M15 24l7-7 7 7M22 17v16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M13 10V8a3 3 0 013-3h12a3 3 0 013 3v2" stroke="currentColor" stroke-width="2"/>
+          </svg>
+        </div>
+        <div class="dropzone-text">Drop screenshots here, or click to browse</div>
+        <div class="dropzone-sub">PNG · JPG · JPEG — multiple files supported</div>
+      </div>
+      <input type="file" id="fileInput" accept="image/*" multiple style="display:none" onchange="handleFiles(this.files)">
+    </div>
+
+    <div id="previewGrid" class="preview-grid" style="display:none"></div>
+    <div id="uploadErr" class="err-box" style="display:none"></div>
+
+    <div id="progressWrap" class="progress-wrap" style="display:none">
+      <div class="progress-label" id="progressLabel">Analyzing with AI…</div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+    </div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn" onclick="closeUpload()">Cancel</button>
+    <button class="btn btn-primary" id="analyzeBtn" onclick="runAnalysis()">
+      <svg id="analyzeBtnIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <span id="analyzeBtnText">Analyze</span>
+    </button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     DETAIL MODAL
+══════════════════════════════════════════════════════════ -->
+<div class="overlay" id="detailOverlay" style="display:none">
+<div class="modal modal-wide">
+  <div class="modal-head">
+    <h2 id="detailTitle">Report Detail</h2>
+    <button class="close-btn" onclick="closeDetail()">✕</button>
+  </div>
+  <div class="modal-body" id="detailBody"></div>
+  <div class="modal-foot">
+    <button class="btn btn-danger btn-sm" id="deleteBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+      Delete entry
+    </button>
+    <button class="btn" onclick="closeDetail()">Close</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     SETTINGS MODAL
+══════════════════════════════════════════════════════════ -->
+<div class="overlay" id="configOverlay" style="display:none">
+<div class="modal" style="width:520px">
+  <div class="modal-head">
+    <h2>Settings</h2>
+    <button class="close-btn" onclick="closeConfig()">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="field">
+      <label>Google Apps Script Web App URL</label>
+      <input type="url" id="scriptUrl" placeholder="https://script.google.com/macros/s/…/exec">
+      <div style="font-size:12px;color:var(--text2);margin-top:6px">
+        Paste the URL from <strong>Extensions → Apps Script → Deploy → Manage deployments</strong>
+      </div>
+    </div>
+    <div class="field">
+      <label>Anthropic API Key</label>
+      <input type="password" id="apiKey" placeholder="sk-ant-…">
+      <div style="font-size:12px;color:var(--text2);margin-top:6px">
+        Stored locally in your browser only. Never sent to the Apps Script backend.
+      </div>
+    </div>
+    <div id="configErr" class="err-box" style="display:none"></div>
+    <div id="configOk"  class="info-box" style="display:none"></div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn" onclick="testConnection()">Test connection</button>
+    <button class="btn btn-primary" onclick="saveConfig()">Save settings</button>
+  </div>
+</div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast" style="display:none">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+  <span id="toastMsg"></span>
+</div>
+
+<script>
+// ─── State & storage ────────────────────────────────────────
+let entries    = [];
+let selFiles   = [];
+let curRowId   = null;
+
+const LS_URL = "finsight_script_url";
+const LS_KEY = "finsight_api_key";
+
+function getUrl() { return localStorage.getItem(LS_URL) || ""; }
+function getKey() { return localStorage.getItem(LS_KEY) || ""; }
+
+// ─── Init ────────────────────────────────────────────────────
+window.addEventListener("DOMContentLoaded", () => {
+  if (!getUrl()) document.getElementById("configBanner").style.display = "block";
+  else           loadEntries();
+});
+
+// ─── Config modal ────────────────────────────────────────────
+function openConfig() {
+  document.getElementById("scriptUrl").value = getUrl();
+  document.getElementById("apiKey").value    = getKey();
+  document.getElementById("configErr").style.display = "none";
+  document.getElementById("configOk").style.display  = "none";
+  document.getElementById("configOverlay").style.display = "flex";
+}
+function closeConfig() { document.getElementById("configOverlay").style.display = "none"; }
+
+function saveConfig() {
+  const u = document.getElementById("scriptUrl").value.trim();
+  const k = document.getElementById("apiKey").value.trim();
+  if (!u) { document.getElementById("configErr").textContent = "Please enter the Web App URL."; document.getElementById("configErr").style.display = "block"; return; }
+  localStorage.setItem(LS_URL, u);
+  if (k) localStorage.setItem(LS_KEY, k);
+  document.getElementById("configBanner").style.display = "none";
+  closeConfig();
+  showToast("Settings saved", "success");
+  loadEntries();
+}
+
+async function testConnection() {
+  const u = document.getElementById("scriptUrl").value.trim();
+  const err = document.getElementById("configErr");
+  const ok  = document.getElementById("configOk");
+  err.style.display = "none"; ok.style.display = "none";
+  if (!u) { err.textContent = "Enter the URL first."; err.style.display = "block"; return; }
+  try {
+    const r = await callBackend("getEntries", {}, u);
+    ok.textContent  = "Connection successful! Found " + (r.entries?.length || 0) + " entries.";
+    ok.style.display = "block";
+  } catch(e) {
+    err.textContent = "Connection failed: " + e.message;
+    err.style.display = "block";
+  }
+}
+
+// ─── Backend calls ────────────────────────────────────────────
+async function callBackend(action, data, urlOverride) {
+  const url = urlOverride || getUrl();
+  if (!url) throw new Error("No Web App URL configured. Open Settings to add it.");
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action, ...data })
+  });
+  const json = await resp.json();
+  if (!json.ok) throw new Error(json.error || "Backend error");
+  return json;
+}
+
+// ─── Load entries ─────────────────────────────────────────────
+async function loadEntries() {
+  try {
+    const r = await callBackend("getEntries", {});
+    entries = r.entries || [];
+    renderTable();
+    updateStats();
+  } catch(e) {
+    showToast("Could not load entries: " + e.message, "error");
+  }
+}
+
+// ─── Upload modal ─────────────────────────────────────────────
+function openUpload() {
+  if (!getUrl()) { openConfig(); return; }
+  resetUploadModal();
+  document.getElementById("uploadOverlay").style.display = "flex";
+}
+function closeUpload() { document.getElementById("uploadOverlay").style.display = "none"; }
+
+function resetUploadModal() {
+  document.getElementById("companyInput").value = "";
+  document.getElementById("dateInput").value    = "";
+  document.getElementById("previewGrid").style.display = "none";
+  document.getElementById("previewGrid").innerHTML     = "";
+  document.getElementById("progressWrap").style.display = "none";
+  document.getElementById("uploadErr").style.display   = "none";
+  document.getElementById("analyzeBtnText").textContent = "Analyze";
+  document.getElementById("analyzeBtn").disabled = false;
+  selFiles = [];
+}
+
+// ─── Drag & drop ─────────────────────────────────────────────
+const dz = document.getElementById("dropzone");
+dz.addEventListener("dragover", e => { e.preventDefault(); dz.classList.add("drag"); });
+dz.addEventListener("dragleave", () => dz.classList.remove("drag"));
+dz.addEventListener("drop", e => { e.preventDefault(); dz.classList.remove("drag"); handleFiles(e.dataTransfer.files); });
+
+function handleFiles(files) {
+  selFiles = Array.from(files);
+  const grid = document.getElementById("previewGrid");
+  grid.innerHTML = "";
+  grid.style.display = selFiles.length ? "grid" : "none";
+  selFiles.forEach((f, i) => {
+    const url  = URL.createObjectURL(f);
+    const wrap = document.createElement("div");
+    wrap.className = "preview-wrap";
+    wrap.innerHTML = `<img class="preview-img" src="${url}"><button class="preview-rm" onclick="removeFile(${i})">✕</button>`;
+    grid.appendChild(wrap);
+  });
+}
+function removeFile(i) { selFiles.splice(i, 1); handleFiles(selFiles); }
+
+// ─── File → base64 ────────────────────────────────────────────
+function toBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload  = () => res(r.result.split(",")[1]);
+    r.onerror = () => rej(new Error("File read failed"));
+    r.readAsDataURL(file);
+  });
+}
+
+// ─── Run AI analysis ─────────────────────────────────────────
+async function runAnalysis() {
+  const company = document.getElementById("companyInput").value.trim();
+  const date    = document.getElementById("dateInput").value.trim();
+  const errBox  = document.getElementById("uploadErr");
+  errBox.style.display = "none";
+
+  if (!company) { errBox.textContent = "Please enter a company name."; errBox.style.display = "block"; return; }
+  if (!date)    { errBox.textContent = "Please enter the report period."; errBox.style.display = "block"; return; }
+  if (!selFiles.length) { errBox.textContent = "Please upload at least one screenshot."; errBox.style.display = "block"; return; }
+  if (!getKey()) { errBox.textContent = "No API key set. Open Settings and enter your Anthropic API key."; errBox.style.display = "block"; return; }
+
+  const btn = document.getElementById("analyzeBtn");
+  btn.disabled = true;
+  document.getElementById("analyzeBtnText").textContent = "Analyzing…";
+  document.getElementById("progressWrap").style.display = "block";
+  setProgress(8, "Converting images…");
+
+  try {
+    // Build image content blocks
+    const imageBlocks = await Promise.all(selFiles.map(async f => ({
+      type: "image",
+      source: { type: "base64", media_type: f.type || "image/jpeg", data: await toBase64(f) }
+    })));
+
+    setProgress(28, "Sending to Claude Vision AI…");
+
+    const systemPrompt = `You are an expert financial analyst. Extract all available financial data from the provided screenshots of company financial reports. Return ONLY valid JSON — no markdown fences, no preamble, no extra text.
+
+JSON structure (use null for any value not found):
+{
+  "quickRationale": "3-4 sentence summary: revenue/profit trend, cost pressure, balance sheet health, dividend visibility",
+  "incomeStatement": {
+    "netSales":        {"current": number|null, "previous": number|null},
+    "costOfSales":     {"current": number|null, "previous": number|null},
+    "grossProfit":     {"current": number|null, "previous": number|null},
+    "adminDistExp":    {"current": number|null, "previous": number|null},
+    "operatingProfit": {"current": number|null, "previous": number|null},
+    "otherIncome":     {"current": number|null, "previous": number|null},
+    "financeCost":     {"current": number|null, "previous": number|null},
+    "profitBeforeTax": {"current": number|null, "previous": number|null},
+    "profitAfterTax":  {"current": number|null, "previous": number|null},
+    "eps":             {"current": number|null, "previous": number|null}
+  },
+  "balanceSheet": {
+    "totalAssets": number|null,
+    "equity": number|null,
+    "cashAndBank": number|null,
+    "longTermInvestments": number|null,
+    "longTermDebt": number|null,
+    "shortTermBorrowings": number|null
+  },
+  "cashFlow": {
+    "operatingCashFlow": number|null,
+    "investingCashFlow": number|null,
+    "financingCashFlow": number|null,
+    "endingCash": number|null
+  },
+  "dividends": {
+    "interim": number|null,
+    "final": number|null,
+    "total": number|null,
+    "bonusRights": "string or null"
+  },
+  "outlook": "5-7 sentence investment outlook: earnings trend, cash conversion, dividend visibility, key risks, sector dynamics, investor suitability"
+}
+
+All monetary values: PKR billions (bn) rounded to 2 decimal places. EPS in PKR per share. If a value is genuinely not in the screenshots, use null.`;
+
+    const apiResp = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": getKey(),
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-calls": "true"
+      },
+      body: JSON.stringify({
+        model: "claude-opus-4-20250514",
+        max_tokens: 2000,
+        system: systemPrompt,
+        messages: [{
+          role: "user",
+          content: [
+            ...imageBlocks,
+            { type: "text", text: `Company: ${company}. Period: ${date}. Extract all financial data from these screenshots and return the JSON.` }
+          ]
+        }]
+      })
+    });
+
+    setProgress(72, "Parsing AI response…");
+
+    const apiJson = await apiResp.json();
+    if (apiJson.error) throw new Error(apiJson.error.message);
+
+    const raw    = (apiJson.content || []).map(b => b.text || "").join("");
+    const clean  = raw.replace(/```json|```/g, "").trim();
+    const parsed = JSON.parse(clean);
+
+    setProgress(88, "Saving to Google Sheets…");
+
+    await callBackend("saveEntry", {
+      data: { company, date, ...parsed }
+    });
+
+    setProgress(100, "Done!");
+    await loadEntries();
+    closeUpload();
+    showToast(`${company} — ${date} saved to Sheets`, "success");
+
+  } catch(e) {
+    errBox.textContent = "Error: " + e.message;
+    errBox.style.display = "block";
+    document.getElementById("progressWrap").style.display = "none";
+  } finally {
+    btn.disabled = false;
+    document.getElementById("analyzeBtnText").textContent = "Analyze";
+  }
+}
+
+function setProgress(pct, label) {
+  document.getElementById("progressFill").style.width  = pct + "%";
+  document.getElementById("progressLabel").textContent = label;
+}
+
+// ─── Render table ─────────────────────────────────────────────
+function renderTable() {
+  const wrap = document.getElementById("tableWrap");
+  document.getElementById("entryCount").textContent = entries.length + " entries";
+
+  if (!entries.length) {
+    wrap.innerHTML = `<div class="empty">
+      <div class="empty-icon"><svg viewBox="0 0 52 52" fill="none"><rect x="8" y="8" width="36" height="36" rx="5" stroke="currentColor" stroke-width="2"/><path d="M17 26h18M17 32h12M17 20h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
+      <div class="empty-title">No reports yet</div>
+      <div class="empty-sub">Click "Analyze Screenshots" to get started</div>
+    </div>`;
+    return;
+  }
+
+  wrap.innerHTML = `<table>
+    <thead><tr>
+      <th>Company</th><th>Period</th>
+      <th>Net Sales (Cur)</th><th>PAT (Cur)</th><th>EPS (Cur)</th>
+      <th>Revenue growth</th><th>Analyzed</th><th></th>
+    </tr></thead>
+    <tbody>
+      ${entries.map((e, i) => {
+        const g = parseFloat(e.revenueGrowth);
+        const growthHtml = isNaN(g) ? "N/A"
+          : `<span class="${g >= 0 ? "up" : "down"}">${g >= 0 ? "↑" : "↓"} ${Math.abs(g).toFixed(1)}%</span>`;
+        const ns  = e.netSalesCur  ? "PKR " + parseFloat(e.netSalesCur).toFixed(2)  + " bn" : "N/A";
+        const pat = e.patCur       ? "PKR " + parseFloat(e.patCur).toFixed(2)       + " bn" : "N/A";
+        const eps = e.epsCur       ? "PKR " + parseFloat(e.epsCur).toFixed(2)               : "N/A";
+        return `<tr>
+          <td><strong>${escHtml(e.company)}</strong></td>
+          <td><span class="badge badge-amber">${escHtml(e.date)}</span></td>
+          <td>${ns}</td><td>${pat}</td><td>${eps}</td>
+          <td>${growthHtml}</td>
+          <td style="color:var(--text3);font-size:12px">${escHtml(e.analyzedAt || "")}</td>
+          <td><button class="btn btn-sm" onclick="openDetail('${e.rowId}')">View</button></td>
+        </tr>`;
+      }).join("")}
+    </tbody>
+  </table>`;
+}
+
+// ─── Update stats ─────────────────────────────────────────────
+function updateStats() {
+  document.getElementById("statTotal").textContent = entries.length;
+  if (!entries.length) return;
+  const latest = entries[0];
+  document.getElementById("statLatest").textContent = latest.company;
+  document.getElementById("statDate").textContent   = latest.date;
+  const growths = entries.map(e => parseFloat(e.revenueGrowth)).filter(g => !isNaN(g));
+  if (growths.length) {
+    const avg = (growths.reduce((a,b) => a+b, 0) / growths.length).toFixed(1);
+    const cls = parseFloat(avg) >= 0 ? "up" : "down";
+    document.getElementById("statGrowth").innerHTML =
+      `<span class="${cls}">${parseFloat(avg)>=0?"↑":"↓"} ${Math.abs(avg)}%</span>`;
+  }
+}
+
+// ─── Detail modal ─────────────────────────────────────────────
+function openDetail(rowId) {
+  const e = entries.find(x => x.rowId === rowId);
+  if (!e) return;
+  curRowId = rowId;
+  document.getElementById("detailTitle").textContent = `${e.company} — ${e.date}`;
+  document.getElementById("deleteBtn").onclick = () => deleteEntry(rowId);
+
+  // We only have summary fields from getEntries; show what we have
+  document.getElementById("detailBody").innerHTML = `
+    <div class="detail-section">
+      <div class="detail-section-title">Quick rationale</div>
+      <div class="narrative-box">${escHtml(e.quickRationale || "N/A")}</div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">Income statement summary</div>
+      <table class="detail-table">
+        <tr><td class="lbl">Net Sales (Current)</td><td class="val">${fmtBn(e.netSalesCur)}</td><td class="lbl">Previous</td><td class="val">${fmtBn(e.netSalesPrev)}</td></tr>
+        <tr><td class="lbl">Revenue growth</td><td class="val" colspan="3">${fmtGrowth(e.revenueGrowth)}</td></tr>
+        <tr><td class="lbl">PAT (Current)</td><td class="val">${fmtBn(e.patCur)}</td><td class="lbl">Previous</td><td class="val">${fmtBn(e.patPrev)}</td></tr>
+        <tr><td class="lbl">EPS (Current)</td><td class="val">${e.epsCur ? "PKR " + parseFloat(e.epsCur).toFixed(2) : "N/A"}</td><td class="lbl">Previous</td><td class="val">${e.epsPrev ? "PKR " + parseFloat(e.epsPrev).toFixed(2) : "N/A"}</td></tr>
+      </table>
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">Outlook</div>
+      <div class="outlook-box">${escHtml(e.outlook || "N/A")}</div>
+    </div>
+    <div style="background:var(--amber-bg);border-radius:var(--radius);padding:11px 14px;font-size:12px;color:var(--amber-text)">
+      Full breakdown (balance sheet, cash flow, dividends) is stored in the <strong>Financial Data</strong> sheet in your Google Spreadsheet.
+    </div>`;
+
+  document.getElementById("detailOverlay").style.display = "flex";
+}
+function closeDetail() { document.getElementById("detailOverlay").style.display = "none"; }
+
+async function deleteEntry(rowId) {
+  if (!confirm("Delete this entry from the spreadsheet? This cannot be undone.")) return;
+  try {
+    await callBackend("deleteEntry", { rowId });
+    entries = entries.filter(e => e.rowId !== rowId);
+    renderTable();
+    updateStats();
+    closeDetail();
+    showToast("Entry deleted", "success");
+  } catch(e) {
+    showToast("Delete failed: " + e.message, "error");
+  }
+}
+
+// ─── Helpers ──────────────────────────────────────────────────
+function fmtBn(v) { return v ? "PKR " + parseFloat(v).toFixed(2) + " bn" : "N/A"; }
+function fmtGrowth(v) {
+  const g = parseFloat(v);
+  if (isNaN(g)) return "N/A";
+  return `<span class="${g>=0?"up":"down"}">${g>=0?"↑":"↓"} ${Math.abs(g).toFixed(1)}%</span>`;
+}
+function escHtml(s) {
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+let toastTimer;
+function showToast(msg, type) {
+  const t = document.getElementById("toast");
+  document.getElementById("toastMsg").textContent = msg;
+  t.className = "toast " + (type || "success");
+  t.style.display = "flex";
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.style.display = "none"; }, 3500);
+}
+</script>
+</body>
+</html>
